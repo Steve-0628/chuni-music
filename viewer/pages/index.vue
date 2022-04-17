@@ -1,47 +1,29 @@
 <script setup lang="ts">
-// // const token = localStorage.getItem('token') || ""
-// const orig_data = await useFetch("/api/all")
-// const wiki_data = await useFetch("/api/list")
-// // console.log(data.data.value)
 
-// const orig: Array<object> = JSON.parse(orig_data.data.value)
-// const wiki: object = JSON.parse(wiki_data.data.value)
+const chunirec_region = "jp2"
+const chunirec_token = "YOUR_CHUNIREC_TOKEN"
+const chunirec_url = new URL("https://api.chunirec.net/2.0/music/showall.json")
+chunirec_url.searchParams.append("region", chunirec_region)
+chunirec_url.searchParams.append("token", chunirec_token)
+const chunirec_data = await fetch(chunirec_url.href).then(chunirec => chunirec.json())
 
-// const orig_parse = {}
+const sega_data = await JSON.parse((await useFetch("/api/all")).data.value)
+const sega_parsed = {}
+sega_data.forEach(item => {
+    sega_parsed[item["title"]] = item["image"]
+});
 
-// const categories: Array<string> = Object.keys(wiki)
-// const category_reverse: object = {}
-
-// categories.forEach(category => {
-//   category_reverse[wiki[category]] = category
-// })
-
-// orig.forEach((item) => {
-//     const categ = category_reverse[item["catname"]]
-//     orig_parse[item["title"]] = item
-// })
-
-// Object.keys(wiki).forEach(key => {
-//     wiki[key]["songs"].forEach(song => {
-//         wiki[key]["songs"]["orig"] = orig_parse[song["title"]]
-//     })
-// })
-
-// const category = ref(categories[0]);
-
-const token = "YOUR_CHUNIREC_TOKEN"
-const chunirec_url = "https://api.chunirec.net/2.0/music/showall.json"
-const chunirec = await fetch(chunirec_url + "?region=jp2&token=" + token)
-const chunirec_data: Array<object> = await chunirec.json()
-const categories_set: Set<string> = new Set()
 const musics = {}
 chunirec_data.forEach(music => {
-    let gener = music["meta"]["genre"]
-    categories_set.add(gener)
-    musics[gener] = musics[gener] || []
-    musics[gener].push(music)
+    let {genre} = music["meta"]
+    // categories_set.add(gener)
+    if(sega_parsed[music["meta"]["title"]]){
+        music["image"] = sega_parsed[music["meta"]["title"]]
+    }
+    musics[genre] ||= []
+    musics[genre].push(music)
 })
-const categories: Array<string> = Array.from(categories_set)
+const categories: Array<string> = Object.keys(musics)//Array.from(categories_set)
 
 const category = ref(categories[0])
 
@@ -156,13 +138,12 @@ body {
             <div class="music_container">
                 <div v-for="item of musics[category]" class="music">
                     <div class="music_top">
-                        
                         <div v-if="category == 'WORLD\'S END'">
                             {{item["data"]}}
                         </div>
                         <div v-else class="music_top_container">
                             <div class="music_top_img_container">
-                                <img v-bind:src="'https://db.chunirec.net/img/music/jkt/'+item['meta']['id']+'.jpg'" >
+                                <img v-bind:src="'https://new.chunithm-net.com/chuni-mobile/html/mobile/img/'+item['image']" >
                                 <div class="music_top_lowlevel_container">
                                     <div>basic:{{item["data"]["BAS"]["level"]}}</div>
                                     <div>advanced:{{item["data"]["ADV"]["level"]}}</div>
